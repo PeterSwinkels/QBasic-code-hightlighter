@@ -1,7 +1,7 @@
 DEFINT A-Z
 
 CONST COMMENT = 0
-CONST Default = 1
+CONST DEFAULT = 1
 CONST DELIMITER = 2
 CONST KEYWORD = 3
 CONST LABEL = 4
@@ -9,11 +9,13 @@ CONST LINENUMBER = 5
 CONST OPERATOR = 6
 CONST STRINGV = 7
 
+CONST CONTROLFLOW$ = " ELSE ERL GOSUB GOTO RESUME RETURN RESTORE RUN THEN "
 CONST DELIMITERS$ = "(),;"
 CONST OPERATORS$ = "*+-/<=>\"
 CONST FALSE = 0
 CONST TRUE = -1
 
+DECLARE FUNCTION IsControlFlow (Buffer AS STRING)
 DECLARE FUNCTION IsIdentifier (Buffer AS STRING)
 DECLARE FUNCTION IsKeyword (Code AS STRING)
 DECLARE FUNCTION IsNumber (Buffer AS STRING)
@@ -301,7 +303,7 @@ END SUB
 SUB Initialize
 
  Colors(COMMENT) = 14
- Colors(Default) = 9
+ Colors(DEFAULT) = 9
  Colors(DELIMITER) = 13
  Colors(KEYWORD) = 10
  Colors(LABEL) = 15
@@ -315,6 +317,11 @@ SUB Initialize
  COLOR 7, 0
  CLS
 END SUB
+
+FUNCTION IsControlFlow (Buffer AS STRING)
+
+ IsControlFlow = (INSTR(CONTROLFLOW$, " " + UCASE$(LTRIM$(RTRIM$(Buffer))) + " ") > 0)
+END FUNCTION
 
 FUNCTION IsIdentifier (Buffer AS STRING)
 DIM Position AS INTEGER
@@ -359,7 +366,11 @@ DIM FileName AS STRING
 DIM LineV AS STRING
 
  FileName = COMMAND$
- IF NOT FileName = "" THEN
+ IF FileName = "" THEN
+  PRINT "Syntax Highlighter for QBasic v1.01 - by: Peter Swinkels, ***2022***"
+  PRINT
+  PRINT "Usage: Hghlghtr.exe FILENAME"
+ ELSE
   FileH = FREEFILE
   OPEN FileName FOR INPUT LOCK READ WRITE AS FileH
    DO UNTIL EOF(FileH) OR INKEY$ = CHR$(27)
@@ -415,7 +426,7 @@ DIM Position AS INTEGER
     END IF
    ELSE
     IF InIdentifiers THEN
-     SubParse Buffer, Default
+     SubParse Buffer, DEFAULT
      DisplayIdentifiers MID$(LineV, Position), EndOfStatement
      Position = Position + (EndOfStatement - 2)
      InIdentifiers = FALSE
@@ -429,17 +440,17 @@ DIM Position AS INTEGER
          SubParse Buffer, COMMENT
          EXIT DO
         ELSE
-         InIdentifiers = (UCASE$(LTRIM$(RTRIM$(Buffer))) = "GOSUB" OR UCASE$(LTRIM$(RTRIM$(Buffer))) = "GOTO")
+         InIdentifiers = IsControlFlow(Buffer)
          SubParse Buffer, KEYWORD
         END IF
        ELSE
-        SubParse Buffer, Default
+        SubParse Buffer, DEFAULT
        END IF
       CASE CHR$(34)
-       SubParse Buffer, Default
+       SubParse Buffer, DEFAULT
        InString = TRUE
       CASE "'"
-       SubParse Buffer, Default
+       SubParse Buffer, DEFAULT
        Buffer = MID$(LineV, Position)
        SubParse Buffer, COMMENT
        EXIT DO
@@ -459,11 +470,11 @@ DIM Position AS INTEGER
      Buffer = MID$(LineV, Position)
      SubParse Buffer, COMMENT
     ELSE
-     InIdentifiers = (UCASE$(LTRIM$(RTRIM$(Buffer))) = "GOSUB" OR UCASE$(LTRIM$(RTRIM$(Buffer))) = "GOTO")
+     InIdentifiers = IsControlFlow(Buffer)
      SubParse Buffer, KEYWORD
     END IF
    ELSE
-    SubParse Buffer, Default
+    SubParse Buffer, DEFAULT
    END IF
   END IF
  END IF
